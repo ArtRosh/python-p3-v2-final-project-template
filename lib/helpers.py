@@ -1,31 +1,30 @@
 # lib/helpers.py
 import os
 import sys
-from typing import Optional, Any, List
 
-def clear_screen() -> None:
+def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
 
-def pause(msg: str = "Press Enter to continue...") -> None:
+def pause(msg: str = "Press Enter to continue..."):
     try:
         input(msg)
     except (EOFError, KeyboardInterrupt):
         pass
 
-def prompt(text: str) -> str:
+def prompt(text: str):
     try:
         return input(text).strip()
     except (EOFError, KeyboardInterrupt):
         return ""
 
-def prompt_nonempty(text: str) -> str:
+def prompt_nonempty(text: str):
     while True:
         s = prompt(text)
         if s:
             return s
         print("Value is required.")
 
-def prompt_int(text: str) -> Optional[int]:
+def prompt_int(text: str):
     s = prompt(text)
     if not s:
         return None
@@ -37,7 +36,7 @@ def confirm(question: str) -> bool:
     ans = prompt(f"{question} (yes/no): ").lower()
     return ans == "yes"
 
-def choose_from_list(items: List[Any], title: str = "") -> Optional[Any]:
+def choose_from_list(items, title: str = ""):
     if not items:
         print("Nothing to choose from.")
         return None
@@ -61,7 +60,6 @@ def choose_from_list(items: List[Any], title: str = "") -> Optional[Any]:
         return None
     return items[idx - 1]
 
-def exit_program() -> None:
+def exit_program():
     print("Goodbye!")
     sys.exit(0)
-    

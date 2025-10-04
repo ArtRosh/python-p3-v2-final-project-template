@@ -5,14 +5,14 @@ from lib.helpers import (
     choose_from_list, confirm, exit_program
 )
 
-def ensure_schema() -> None:
+def ensure_schema():
     """Create tables if they don't exist."""
     Owner.create_table()
     Car.create_table()
 
 # ---------------- Main Menus ----------------
 
-def owners_menu() -> None:
+def owners_menu():
     while True:
         clear_screen()
         print("=== Owners Menu ===")
@@ -67,7 +67,7 @@ def owners_menu() -> None:
             print("Invalid choice.")
             pause()
 
-def owner_cars_menu(owner: Owner) -> None:
+def owner_cars_menu(owner: Owner):
     while True:
         clear_screen()
         print(f"=== {owner.name}'s Cars ===")
@@ -125,7 +125,7 @@ def owner_cars_menu(owner: Owner) -> None:
             print("Invalid choice.")
             pause()
 
-def main_menu() -> None:
+def main_menu():
     ensure_schema()
     while True:
         clear_screen()
@@ -144,4 +144,3 @@ def main_menu() -> None:
 
 if __name__ == "__main__":
     main_menu()
-    
