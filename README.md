@@ -1,172 +1,110 @@
-# Phase 3 CLI+ORM Project Template
+# Owners & Cars CLI
 
-## Learning Goals
+## 🧭 Project Overview
 
-- Discuss the basic directory structure of a CLI.
-- Outline the first steps in building a CLI.
+**Owners & Cars CLI** is a Python Command Line Interface (CLI) app for managing a simple one-to-many relationship — one **Owner** can have many **Cars**.
+It uses **SQLite** as a local database and demonstrates **Object-Relational Mapping (ORM)** concepts implemented through Python classes.
+Users can perform CRUD operations (Create, Read, Update, Delete) via an interactive text-based interface.
 
----
 
-## Introduction
+   ```bash
+   # 1. Install dependencies
+   pipenv install
+   ```
 
-You now have a basic idea of what constitutes a CLI. Fork and clone this lesson
-for a project template for your CLI.
+   ```bash
+   # 2. Activate the virtual environment
+   pipenv shell
+   ```
 
-Take a look at the directory structure:
+   ```bash
+   # 3. Run the CLI
+   python -m lib.cli
+   ```
 
-```console
-.
+
+### 📁 File Structure
+```bash
 ├── Pipfile
 ├── Pipfile.lock
 ├── README.md
 └── lib
-    ├── models
-    │   ├── __init__.py
-    │   └── model_1.py
-    ├── cli.py
-    ├── debug.py
-    └── helpers.py
+    ├── cli.py          # Main command-line interface logic
+    ├── helpers.py      # Input prompts, validation, and screen clearing
+    ├── db.sqlite3      # SQLite database file
+    └── models
+        ├── __init__.py
+        ├── owner.py    # Owner class: defines owner attributes and relationships
+        └── car.py      # Car class: defines car attributes and links to owner
 ```
 
-Note: The directory also includes two files named `CONTRIBUTING.md` and
-`LICENSE.md` that are specific to Flatiron's curriculum. You can disregard or
-delete the files if you want.
+### 🧩 Key Features
 
----
+	•	Interactive CLI with text menus for managing owners and cars.
 
-## Generating Your Environment
+	•	CRUD functionality for both entities.
 
-You might have noticed in the file structure- there's already a Pipfile!
+	•	Automatic database setup on first run.
 
-Install any additional dependencies you know you'll need for your project by
-adding them to the `Pipfile`. Then run the commands:
+	•	Clean modular code using OOP and ORM concepts.
 
-```console
-pipenv install
-pipenv shell
-```
+	•	User-friendly prompts and dynamic lists.
 
----
+### 📸 Demo Screenshots
 
-## Generating Your CLI
+#### 1. Main Menu
 
-A CLI is, simply put, an interactive script and prompts the user and performs
-operations based on user input.
+![Main Menu](./screenshots/01-main_menu.png)
 
-The project template has a sample CLI in `lib/cli.py` that looks like this:
+The starting screen of the CLI app, showing the top-level options — access the Owners menu or Exit the program.
 
-```py
-# lib/cli.py
+#### 2. Owners Menu
 
-from helpers import (
-    exit_program,
-    helper_1
-)
+![Owners Menu](./screenshots/02-owners_menu.png)
 
+*The Owners Menu allows you to list, create, rename, or delete owners, as well as view each owner’s cars.*
 
-def main():
-    while True:
-        menu()
-        choice = input("> ")
-        if choice == "0":
-            exit_program()
-        elif choice == "1":
-            helper_1()
-        else:
-            print("Invalid choice")
+#### 3. List of Owners
 
+![List of Owners](./screenshots/03-list_of_owners.png)
 
-def menu():
-    print("Please select an option:")
-    print("0. Exit the program")
-    print("1. Some useful function")
+*Displays all existing owners in the system. This menu updates dynamically when owners are added or removed.*
 
+#### 4. Create Owner
 
-if __name__ == "__main__":
-    main()
-```
+![Create Owner](./screenshots/04-create_owner.png)
 
-The helper functions are located in `lib/helpers.py`:
+*Example of creating a new owner. The app prompts for the name, saves it to the database, and confirms creation.*
 
-```py
-# lib/helpers.py
+#### 5. Rename Owner
 
-def helper_1():
-    print("Performing useful function#1.")
+![Rename Owner](./screenshots/05-rename_owner.png)
 
+*Demonstrates how an existing owner’s name can be changed. The user selects an owner and enters a new name.*
 
-def exit_program():
-    print("Goodbye!")
-    exit()
-```
+#### 6. Delete Owner
 
-You can run the template CLI with `python lib/cli.py`, or include the shebang
-and make it executable with `chmod +x`. The template CLI will ask for input, do
-some work, and accomplish some sort of task.
+![Delete Owner](./screenshots/06-delete_owner.png)
 
-Past that, CLIs can be whatever you'd like, as long as you follow the project
-requirements.
+*Example of deleting an owner. The app asks for confirmation before removing the owner and their cars from the database.*
 
-Of course, you will update `lib/cli.py` with prompts that are appropriate for
-your application, and you will update `lib/helpers.py` to replace `helper_1()`
-with a useful function based on the specific problem domain you decide to
-implement, along with adding other helper functions to the module.
+#### 7. Owner’s Cars Menu
 
-In the `lib/models` folder, you should rename `model_1.py` with the name of a
-data model class from your specific problem domain, and add other classes to the
-folder as needed. The file `lib/models/__init__.py` has been initialized to
-create the necessary database constants. You need to add import statements to
-the various data model classes in order to use the database constants.
+![Owner's Cars Menu](./screenshots/07-owners_cars.png)
 
-You are also welcome to implement a different module and directory structure.
-However, your project should be well organized, modular, and follow the design
-principal of separation of concerns, which means you should separate code
-related to:
+*After selecting an owner, this submenu provides options to list, add, update, or delete cars belonging to that owner.*
 
-- User interface
-- Data persistence
-- Problem domain rules and logic
+#### 8. List of Cars
 
----
+![List of Cars](./screenshots/08-list_of_cars.png)
 
-## Updating README.md
+*Displays all cars for the selected owner, including model and year.*
 
-`README.md` is a Markdown file that should describe your project. You will
-replace the contents of this `README.md` file with a description of **your**
-actual project.
+### 🏁 Conclusion  
 
-Markdown is not a language that we cover in Flatiron's Software Engineering
-curriculum, but it's not a particularly difficult language to learn (if you've
-ever left a comment on Reddit, you might already know the basics). Refer to the
-cheat sheet in this assignments's resources for a basic guide to Markdown.
+This CLI project showcases:
+- Implementation of a **one-to-many relationship** in Python  
+- Integration of **OOP** with an **SQLite relational database**  
+- Design of a **user-friendly CLI interface**
 
-### What Goes into a README?
-
-This README serves as a template. Replace the contents of this file to describe
-the important files in your project and describe what they do. Each Python file
-that you edit should get at least a paragraph, and each function should be
-described with a sentence or two.
-
-Describe your actual CLI script first, and with a good level of detail. The rest
-should be ordered by importance to the user. (Probably functions next, then
-models.)
-
-Screenshots and links to resources that you used throughout are also useful to
-users and collaborators, but a little more syntactically complicated. Only add
-these in if you're feeling comfortable with Markdown.
-
----
-
-## Conclusion
-
-A lot of work goes into a good CLI, but it all relies on concepts that you've
-practiced quite a bit by now. Hopefully this template and guide will get you off
-to a good start with your Phase 3 Project.
-
-Happy coding!
-
----
-
-## Resources
-
-- [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet/)
+It reinforces Phase 3 core concepts — **classes**, **ORM**, and **CRUD operations**.
