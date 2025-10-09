@@ -1,82 +1,141 @@
-from . import CONN, CURSOR
+# lib/owner.py
+from . import CURSOR, CONN
 
 
 class Owner:
     """Owner model: one Owner -> many Cars."""
 
-    def __init__(self, name: str, id=None):
-        self._id = id  # read-only outside ORM
-        self.name = name  # route through setter for validation
+    # Dictionary of objects saved to the database.
+    all = {}
 
-    # --- Getters/Setters ---
-    @property
-    def id(self):
-        return self._id
+    def __init__(self, name, id=None):
+        self.id = id
+        self.name = name
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("name must be a non-empty string")
-        self._name = value.strip()
-
-    @property
-    def cars(self):
-        """Read-only: all cars that belong to this owner (lazy DB query)."""
-        if self._id is None:
-            return []
-        from .car import Car  # local import to avoid circular
-        CURSOR.execute(
-            "SELECT id, make, model, year, owner_id FROM cars WHERE owner_id = ?;",
-            (self._id,),
-        )
-        rows = CURSOR.fetchall()
-        return [Car(id=r[0], make=r[1], model=r[2], year=r[3], owner_id=r[4]) for r in rows]
+    def __repr__(self):
+        return f"<Owner {self.id}: {self.name}>"
 
     # --- Table ---
     @classmethod
     def create_table(cls):
-        CURSOR.execute(
-            "CREATE TABLE IF NOT EXISTS owners (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);"
-        )
+        """Create a new table to persist the attributes of Owner instances"""
+        sql = """
+            CREATE TABLE IF NOT EXISTS owners (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE
+            )
+        """
+        CURSOR.execute(sql)
         CONN.commit()
 
     @classmethod
     def drop_table(cls):
-        CURSOR.execute("DROP TABLE IF EXISTS owners;")
+        """Drop the table that persists Owner instances"""
+        sql = """
+            DROP TABLE IF EXISTS owners;
+        """
+        CURSOR.execute(sql)
         CONN.commit()
 
     # --- CRUD ---
     def save(self):
-        if self._id is None:
-            CURSOR.execute("INSERT INTO owners (name) VALUES (?);", (self._name,))
-            CONN.commit()
-            self._id = CURSOR.lastrowid
-        else:
-            CURSOR.execute("UPDATE owners SET name = ? WHERE id = ?;", (self._name, self._id))
-            CONN.commit()
-        return self
+        """
+        Insert a new row with the current Owner instance values.
+        Update object id attribute using the primary key value of new row.
+        Save the object in local dictionary using table row's PK as dictionary key.
+        """
+        if self.id:
+            # Already in DB; perform update to keep row in sync
+            self.update()
+            return
+
+        sql = """
+            INSERT INTO owners (name)
+            VALUES (?)
+        """
+        CURSOR.execute(sql, (self.name,))
+        CONN.commit()
+
+        self.id = CURSOR.lastrowid
+        type(self).all[self.id] = self
+
+    @classmethod
+    def create(cls, name):
+        """Initialize a new Owner instance and save the object to the database"""
+        owner = cls(name)
+        owner.save()
+        return owner
+
+    def update(self):
+        """Update the table row corresponding to the current Owner instance."""
+        sql = """
+            UPDATE owners
+            SET name = ?
+            WHERE id = ?
+        """
+        CURSOR.execute(sql, (self.name, self.id))
+        CONN.commit()
 
     def delete(self):
-        if self._id is not None:
-            CURSOR.execute("DELETE FROM owners WHERE id = ?;", (self._id,))
-            CONN.commit()
-            self._id = None
+        """
+        Delete the table row corresponding to the current Owner instance,
+        delete the dictionary entry, and reassign id attribute.
+        """
+        sql = """
+            DELETE FROM owners
+            WHERE id = ?
+        """
+        CURSOR.execute(sql, (self.id,))
+        CONN.commit()
+
+        # Delete from local identity map and reset id
+        del type(self).all[self.id]
+        self.id = None
+
+    # --- Identity Map hydration ---
+    @classmethod
+    def instance_from_db(cls, row):
+        """Return an Owner object having the attribute values from the table row."""
+        owner = cls.all.get(row[0])
+        if owner:
+            # ensure attributes match row values in case local instance was modified
+            owner.name = row[1]
+        else:
+            owner = cls(row[1], id=row[0])
+            cls.all[owner.id] = owner
+        return owner
+
+    # --- Query helpers ---
+    @classmethod
+    def get_all(cls):
+        """Return a list containing an Owner object per row in the table"""
+        sql = "SELECT * FROM owners"
+        rows = CURSOR.execute(sql).fetchall()
+        return [cls.instance_from_db(row) for row in rows]
 
     @classmethod
-    def all(cls):
-        CURSOR.execute("SELECT id, name FROM owners ORDER BY name;")  # sorted for stable CLI display
-        return [cls(id=row[0], name=row[1]) for row in CURSOR.fetchall()]
+    def find_by_id(cls, id):
+        """Return an Owner object corresponding to the row matching the specified primary key"""
+        sql = "SELECT * FROM owners WHERE id = ?"
+        row = CURSOR.execute(sql, (id,)).fetchone()
+        return cls.instance_from_db(row) if row else None
 
     @classmethod
-    def find_by_id(cls, id_):
-        CURSOR.execute("SELECT id, name FROM owners WHERE id = ?;", (id_,))
-        row = CURSOR.fetchone()
-        return cls(id=row[0], name=row[1]) if row else None
+    def find_by_name(cls, name):
+        """Return an Owner object corresponding to first row matching specified name"""
+        sql = "SELECT * FROM owners WHERE name = ?"
+        row = CURSOR.execute(sql, (name,)).fetchone()
+        return cls.instance_from_db(row) if row else None
 
-    def __repr__(self):
-        return f"<Owner id={self._id} name={self._name}>"
+    # --- Relations ---
+    def cars(self):
+        """Return list of cars associated with current owner"""
+        from .car import Car
+        sql = """
+            SELECT * FROM cars
+            WHERE owner_id = ?
+        """
+        CURSOR.execute(sql, (self.id,))
+        rows = CURSOR.fetchall()
+        return [Car.instance_from_db(row) for row in rows]
     

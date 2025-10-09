@@ -32,7 +32,7 @@ def prompt_int(text: str):
         return None
     return int(s)
 
-def confirm(question: str) -> bool:
+def confirm(question: str):
     ans = prompt(f"{question} (yes/no): ").lower()
     return ans == "yes"
 

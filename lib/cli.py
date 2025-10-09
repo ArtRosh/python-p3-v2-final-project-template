@@ -1,5 +1,6 @@
 # lib/cli.py
-from lib.models import Owner, Car
+from lib.models.owner import Owner
+from lib.models.car import Car
 from lib.helpers import (
     clear_screen, pause, prompt, prompt_nonempty, prompt_int,
     choose_from_list, confirm, exit_program
@@ -26,13 +27,13 @@ def owners_menu():
 
         if choice == "a":
             clear_screen()
-            owners = Owner.all()
+            owners = Owner.get_all()
             if not owners:
                 print("No owners yet.")
             else:
                 for i, o in enumerate(owners, start=1):
                     print(f"{i}. {o.name}")
-            pause()
+                pause()
 
         elif choice == "b":
             name = prompt_nonempty("Owner name: ")
@@ -41,23 +42,23 @@ def owners_menu():
             pause()
 
         elif choice == "c":
-            owner = choose_from_list(Owner.all(), "Choose an owner to rename:")
+            owner = choose_from_list(Owner.get_all(), "Choose an owner to rename:")
             if owner:
                 new_name = prompt_nonempty(f"New name for {owner.name}: ")
                 owner.name = new_name
                 owner.save()
                 print("Owner updated.")
-                pause()
+            # pause()
 
         elif choice == "d":
-            owner = choose_from_list(Owner.all(), "Choose an owner to delete:")
+            owner = choose_from_list(Owner.get_all(), "Choose an owner to delete:")
             if owner and confirm(f"Delete '{owner.name}' and all their cars?"):
                 owner.delete()
                 print("Owner deleted.")
-                pause()
+            # pause()
 
         elif choice == "e":
-            owner = choose_from_list(Owner.all(), "Choose an owner:")
+            owner = choose_from_list(Owner.get_all(), "Choose an owner:")
             if owner:
                 owner_cars_menu(owner)
 
@@ -65,7 +66,7 @@ def owners_menu():
             return
         else:
             print("Invalid choice.")
-            pause()
+        # pause()
 
 def owner_cars_menu(owner: Owner):
     while True:
@@ -79,7 +80,7 @@ def owner_cars_menu(owner: Owner):
         choice = prompt("> ").lower()
 
         if choice == "a":
-            cars = owner.cars
+            cars = owner.cars()
             if not cars:
                 print("No cars for this owner.")
             else:
@@ -99,7 +100,7 @@ def owner_cars_menu(owner: Owner):
             pause()
 
         elif choice == "c":
-            cars = owner.cars
+            cars = owner.update()
             car = choose_from_list(cars, "Choose a car to update:")
             if car:
                 new_make = prompt("New make (Enter to keep): ") or car.make
@@ -113,7 +114,7 @@ def owner_cars_menu(owner: Owner):
                 pause()
 
         elif choice == "d":
-            car = choose_from_list(owner.cars, "Choose a car to delete:")
+            car = choose_from_list(owner.cars(), "Choose a car to delete:")
             if car and confirm("Delete this car?"):
                 car.delete()
                 print("Car deleted.")

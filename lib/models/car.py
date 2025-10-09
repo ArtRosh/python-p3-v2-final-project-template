@@ -1,115 +1,130 @@
-from . import CONN, CURSOR
+# lib/car.py
+from . import CURSOR, CONN
+from .owner import Owner
 
 
 class Car:
-    """Car model: many Cars belong to one Owner."""
+    # Dictionary of objects saved to the database.
+    all = {}
 
     def __init__(self, make, model, year, owner_id, id=None):
-        self._id = id  # read-only outside of ORM
+        self.id = id
         self.make = make
         self.model = model
         self.year = year
         self.owner_id = owner_id
 
-    # --- Getters/Setters ---
-    @property
-    def id(self):
-        return self._id
+    def __repr__(self):
+        return (
+            f"<Car {self.id}: {self.year} {self.make} {self.model}, "
+            f"Owner ID: {self.owner_id}>"
+        )
 
-    @property
-    def make(self):
-        return self._make
-    @make.setter
-    def make(self, v):
-        if not isinstance(v, str) or not v.strip():
-            raise ValueError("make must be a non-empty string")
-        self._make = v.strip()
-
-    @property
-    def model(self):
-        return self._model
-    @model.setter
-    def model(self, v):
-        if not isinstance(v, str) or not v.strip():
-            raise ValueError("model must be a non-empty string")
-        self._model = v.strip()
-
-    @property
-    def year(self):
-        return self._year
-    @year.setter
-    def year(self, v):
-        if not isinstance(v, int):
-            raise ValueError("year must be an integer")
-        if v < 1886 or v > 2100:
-            raise ValueError("year must be between 1886 and 2100")
-        self._year = v
-
-    @property
-    def owner_id(self):
-        return self._owner_id
-    @owner_id.setter
-    def owner_id(self, v):
-        if not isinstance(v, int) or v <= 0:
-            raise ValueError("owner_id must be a positive integer")
-        self._owner_id = v
-
-    # --- Table ---
+    # --- DDL ---
     @classmethod
     def create_table(cls):
-        CURSOR.execute(
-            """
+        """Create a new table to persist the attributes of Car instances"""
+        sql = """
             CREATE TABLE IF NOT EXISTS cars (
                 id INTEGER PRIMARY KEY,
-                make TEXT NOT NULL,
-                model TEXT NOT NULL,
-                year INTEGER NOT NULL,
-                owner_id INTEGER NOT NULL,
-                FOREIGN KEY (owner_id) REFERENCES owners(id) ON DELETE CASCADE
-            );
-            """
-        )
+                make TEXT,
+                model TEXT,
+                year INTEGER,
+                owner_id INTEGER,
+                FOREIGN KEY (owner_id) REFERENCES owners(id)
+            )
+        """
+        CURSOR.execute(sql)
         CONN.commit()
 
     @classmethod
     def drop_table(cls):
-        CURSOR.execute("DROP TABLE IF EXISTS cars;")
+        """Drop the table that persists Car instances"""
+        sql = "DROP TABLE IF EXISTS cars;"
+        CURSOR.execute(sql)
         CONN.commit()
 
-    # --- CRUD ---
+    # --- CRUD (instance) ---
     def save(self):
-        if self._id is None:
-            CURSOR.execute(
-                "INSERT INTO cars (make, model, year, owner_id) VALUES (?, ?, ?, ?);",
-                (self._make, self._model, self._year, self._owner_id),
-            )
-            CONN.commit()
-            self._id = CURSOR.lastrowid
-        else:
-            CURSOR.execute(
-                "UPDATE cars SET make = ?, model = ?, year = ?, owner_id = ? WHERE id = ?;",
-                (self._make, self._model, self._year, self._owner_id, self._id),
-            )
-            CONN.commit()
-        return self
+        """
+        Insert a new row with the attributes of the current Car instance.
+        Update object id using the primary key of the new row.
+        Save the object in the local dictionary using PK as the key.
+        """
+        sql = """
+            INSERT INTO cars (make, model, year, owner_id)
+            VALUES (?, ?, ?, ?)
+        """
+        CURSOR.execute(sql, (self.make, self.model, self.year, self.owner_id))
+        CONN.commit()
+
+        self.id = CURSOR.lastrowid
+        type(self).all[self.id] = self
+
+    def update(self):
+        """Update the table row corresponding to the current Car instance"""
+        sql = """
+            UPDATE cars
+            SET make = ?, model = ?, year = ?, owner_id = ?
+            WHERE id = ?
+        """
+        CURSOR.execute(sql, (self.make, self.model, self.year, self.owner_id, self.id))
+        CONN.commit()
 
     def delete(self):
-        if self._id is not None:
-            CURSOR.execute("DELETE FROM cars WHERE id = ?;", (self._id,))
-            CONN.commit()
-            self._id = None
+        """
+        Delete the table row corresponding to the current Car instance,
+        delete the dictionary entry, and reassign id attribute.
+        """
+        sql = "DELETE FROM cars WHERE id = ?"
+        CURSOR.execute(sql, (self.id,))
+        CONN.commit()
+
+        del type(self).all[self.id]
+        self.id = None
+
+    # --- CRUD (class) ---
+    @classmethod
+    def create(cls, make, model, year, owner_id):
+        """Initialize a new Car instance and save it to the database"""
+        car = cls(make, model, year, owner_id)
+        car.save()
+        return car
 
     @classmethod
-    def all(cls):
-        CURSOR.execute("SELECT id, make, model, year, owner_id FROM cars;")
-        return [cls(id=r[0], make=r[1], model=r[2], year=r[3], owner_id=r[4]) for r in CURSOR.fetchall()]
+    def instance_from_db(cls, row):
+        """
+        Return a Car object having the attribute values from the table row.
+        Keeps a single in-memory instance per DB row (identity map).
+        """
+        car = cls.all.get(row[0])
+        if car:
+            car.make = row[1]
+            car.model = row[2]
+            car.year = row[3]
+            car.owner_id = row[4]
+        else:
+            car = cls(row[1], row[2], row[3], row[4], id=row[0])
+            cls.all[car.id] = car
+        return car
 
     @classmethod
-    def find_by_id(cls, id_):
-        CURSOR.execute("SELECT id, make, model, year, owner_id FROM cars WHERE id = ?;", (id_,))
-        row = CURSOR.fetchone()
-        return cls(id=row[0], make=row[1], model=row[2], year=row[3], owner_id=row[4]) if row else None
+    def get_all(cls):
+        """Return a list containing one Car object per table row"""
+        sql = "SELECT * FROM cars"
+        rows = CURSOR.execute(sql).fetchall()
+        return [cls.instance_from_db(row) for row in rows]
 
-    def __repr__(self):
-        return f"<Car id={self._id} {self._year} {self._make} {self._model} owner_id={self._owner_id}>"
-    
+    @classmethod
+    def find_by_id(cls, id):
+        """Return Car object matching the specified primary key"""
+        sql = "SELECT * FROM cars WHERE id = ?"
+        row = CURSOR.execute(sql, (id,)).fetchone()
+        return cls.instance_from_db(row) if row else None
+
+    @classmethod
+    def find_by_model(cls, model):
+        """Return first Car object matching the specified model"""
+        sql = "SELECT * FROM cars WHERE model = ?"
+        row = CURSOR.execute(sql, (model,)).fetchone()
+        return cls.instance_from_db(row) if row else None
