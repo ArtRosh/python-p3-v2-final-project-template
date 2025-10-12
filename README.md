@@ -22,6 +22,11 @@ Users can perform CRUD operations (Create, Read, Update, Delete) via an interact
    python -m lib.cli
    ```
 
+#### 🧩 Debug Mode (Optional)
+    
+```bash
+python lib/debug.py
+```
 
 ### 📁 File Structure
 ```bash
