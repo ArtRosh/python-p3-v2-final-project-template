@@ -14,6 +14,19 @@ class Owner:
 
     def __repr__(self):
         return f"<Owner {self.id}: {self.name}>"
+    
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        if isinstance(name, str) and len(name):
+            self._name = name
+        else:
+            raise ValueError(
+                "Name must be a non-empty string"
+            )
 
     # --- Table ---
     @classmethod
