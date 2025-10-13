@@ -20,6 +20,21 @@ class Car:
             f"Owner ID: {self.owner_id}>"
         )
 
+    @property
+    def make(self):
+        return self._make
+    
+    @make.setter
+    def make(self, value):
+        if isinstance(value, str) and len(value):
+            self._make
+        else:
+            raise ValueError(
+                "Make must be a non-empty string"
+            )
+
+    
+
     # --- DDL ---
     @classmethod
     def create_table(cls):
