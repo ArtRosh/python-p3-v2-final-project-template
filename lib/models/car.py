@@ -33,7 +33,18 @@ class Car:
                 "Make must be a non-empty string"
             )
 
+    @property
+    def model(self):
+        return self._model
     
+    @model.setter
+    def model(self, value):
+        if isinstance(value, str) and value.strip():
+            self._model = value
+        else:
+            raise ValueError(
+                "Model must be a non-empty string"
+            )
 
     # --- DDL ---
     @classmethod
