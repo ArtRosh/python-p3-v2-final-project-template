@@ -47,14 +47,30 @@ class Car:
             )
 
     @property
-    def year(self): return self._year
-    
+    def year(self): 
+        return self._year
+
     @year.setter
     def year(self, value):
         if isinstance(value, int) and 1886 <= value <= 2100:
             self._year = value
         else:
-            raise ValueError("Year must be an integer between 1886 and 2100")
+            raise ValueError(
+                "Year must be an integer between 1886 and 2100"
+                )
+
+    @property
+    def owner_id(self): 
+        return self._owner_id
+
+    @owner_id.setter
+    def owner_id(self, value):
+        if value is None or (isinstance(value, int) and value > 0):
+            self._owner_id = value
+        else:
+            raise ValueError(
+                "owner_id must be a positive integer or None"
+                )
 
     # --- DDL ---
     @classmethod
