@@ -46,6 +46,16 @@ class Car:
                 "Model must be a non-empty string"
             )
 
+    @property
+    def year(self): return self._year
+    
+    @year.setter
+    def year(self, value):
+        if isinstance(value, int) and 1886 <= value <= 2100:
+            self._year = value
+        else:
+            raise ValueError("Year must be an integer between 1886 and 2100")
+
     # --- DDL ---
     @classmethod
     def create_table(cls):
